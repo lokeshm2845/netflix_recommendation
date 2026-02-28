@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix AI - Smart Movie Recommendations</title>
+   <style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    }
+
+    body {
+        background: #141414;
+        color: #ffffff;
+        min-height: 100vh;
+    }
+
+    /* Netflix-style header */
+    .header {
+        background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, transparent 100%);
+        padding: 20px 50px;
+        position: fixed;
+        width: 100%;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 40px;
+    }
+
+    .logo {
+        color: #e50914;
+        font-size: 32px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 20px;
+    }
+
+    .nav-links a {
+        color: #fff;
+        text-decoration: none;
+        font-size: 14px;
+        transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+        color: #e50914;
+    }
+
+    .user-menu {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .user-menu span {
+        color: #fff;
+        font-size: 14px;
+    }
+
+    .avatar {
+        width: 32px;
+        height: 32px;
+        background: #e50914;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+
+    /* Main container */
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 100px 50px 50px;
+    }
+
+    /* Hero banner */
+    .hero {
+        height: 500px;
+        background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 100%), 
+                    url('https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?auto=format&fit=crop&w=2000') center/cover;
+        border-radius: 10px;
+        margin-bottom: 40px;
+        display: flex;
+        align-items: center;
+        padding: 50px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-content {
+        max-width: 600px;
+        animation: fadeInUp 1s ease;
+    }
+
+    .hero-title {
+        font-size: 48px;
+        font-weight: bold;
+        margin-bottom: 20px;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .hero-description {
+        font-size: 18px;
+        color: #ccc;
+        margin-bottom: 30px;
+        line-height: 1.6;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 15px;
+    }
+
+    .btn-primary {
+        background: #e50914;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .btn-primary:hover {
+        background: #f40612;
+        transform: scale(1.05);
+    }
+
+    .btn-secondary {
+        background: rgba(255,255,255,0.3);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        /* Backdrop filter with vendor prefixes */
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(5px);
+        /* Fallback for browsers that don't support backdrop-filter */
+        background: rgba(0,0,0,0.5);
+        transition: all 0.3s;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(255,255,255,0.4);
+        -webkit-backdrop-filter: blur(5px);
+        backdrop-filter: blur(5px);
+        transform: scale(1.05);
+    }
+
+    /* Search section - FIXED BACKDROP FILTER */
+    .search-section {
+        background: rgba(20,20,20,0.9); /* Fallback for older browsers */
+        /* Gradient background as fallback */
+        background: linear-gradient(135deg, rgba(40,40,40,0.95) 0%, rgba(20,20,20,0.95) 100%);
+        padding: 30px;
+        border-radius: 10px;
+        margin-bottom: 40px;
+        /* Backdrop filter with vendor prefixes */
+        -webkit-backdrop-filter: blur(10px);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* Alternative if backdrop-filter is supported */
+    @supports ((-webkit-backdrop-filter: blur(10px)) or (backdrop-filter: blur(10px))) {
+        .search-section {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+        }
+    }
+
+    .search-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #fff;
+    }
+
+    .input-group {
+        display: flex;
+        gap: 15px;
+        max-width: 500px;
+    }
+
+    .input-group input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid transparent;
+        border-radius: 5px;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        font-size: 16px;
+        transition: all 0.3s;
+    }
+
+    .input-group input:focus {
+        outline: none;
+        border-color: #e50914;
+        background: rgba(0,0,0,0.9);
+    }
+
+    .input-group button {
+        padding: 15px 30px;
+        border: none;
+        border-radius: 5px;
+        background: #e50914;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .input-group button:hover {
+        background: #f40612;
+        transform: translateY(-2px);
+    }
+
+    /* Loading animation */
+    .loading {
+        text-align: center;
+        padding: 60px;
+        display: none;
+    }
+
+    .netflix-loader {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 20px;
+        position: relative;
+    }
+
+    .netflix-loader:before,
+    .netflix-loader:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: #e50914;
+        opacity: 0.6;
+        animation: pulse 2s ease-out infinite;
+    }
+
+    .netflix-loader:after {
+        animation-delay: 1s;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(0); opacity: 1; }
+        50% { transform: scale(1); opacity: 0; }
+    }
+
+    /* Movie rows */
+    .movie-row {
+        margin-bottom: 40px;
+    }
+
+    .row-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .row-title span {
+        color: #e50914;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .movie-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+    }
+
+    .movie-card {
+        background: #1f1f1f;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s;
+        cursor: pointer;
+        position: relative;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    .movie-card:hover {
+        transform: translateY(-10px) scale(1.05);
+        z-index: 10;
+        box-shadow: 0 15px 30px rgba(229, 9, 20, 0.3);
+    }
+
+    .movie-poster {
+        position: relative;
+        height: 280px;
+        overflow: hidden;
+    }
+
+    .movie-poster img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s;
+    }
+
+    .movie-card:hover .movie-poster img {
+        transform: scale(1.1);
+    }
+
+    .movie-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        padding: 20px;
+    }
+
+    .movie-card:hover .movie-overlay {
+        opacity: 1;
+    }
+
+    .movie-rating-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #e50914;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+        font-size: 14px;
+    }
+
+    .movie-info {
+        padding: 15px;
+    }
+
+    .movie-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #fff;
+    }
+
+    .movie-genre {
+        color: #999;
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+    .movie-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .movie-year {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .stars {
+        display: flex;
+        gap: 2px;
+    }
+
+    .star {
+        color: #ffd700;
+        font-size: 12px;
+    }
+
+    .star.inactive {
+        color: #444;
+    }
+
+    /* Popular section */
+    .popular-section {
+        margin-top: 50px;
+    }
+
+    .popular-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 15px;
+    }
+
+    .popular-item {
+        background: #1f1f1f;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        transition: all 0.3s;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .popular-item:hover {
+        background: #e50914;
+        transform: translateY(-5px);
+    }
+
+    .popular-item img {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin-bottom: 10px;
+        object-fit: cover;
+    }
+
+    /* User badge */
+    .user-badge {
+        background: rgba(229, 9, 20, 0.2);
+        padding: 10px 20px;
+        border-radius: 5px;
+        display: inline-block;
+        margin-bottom: 20px;
+        border-left: 4px solid #e50914;
+    }
+
+    .user-badge span {
+        color: #e50914;
+        font-weight: bold;
+    }
+
+    /* Error message */
+    .error-message {
+        background: rgba(229, 9, 20, 0.2);
+        border: 1px solid #e50914;
+        border-radius: 5px;
+        padding: 20px;
+        text-align: center;
+        color: #fff;
+        margin: 20px 0;
+        display: none;
+    }
+
+    /* Footer */
+    .footer {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+        font-size: 14px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        margin-top: 50px;
+    }
+
+    .footer a {
+        color: #fff;
+        text-decoration: none;
+        margin: 0 10px;
+    }
+
+    .footer a:hover {
+        color: #e50914;
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .header {
+            padding: 20px;
+        }
+        
+        .nav-links {
+            display: none;
+        }
+        
+        .hero-title {
+            font-size: 32px;
+        }
+        
+        .input-group {
+            flex-direction: column;
+        }
+        
+        .movie-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">NETFLIX</div>
+        <div class="nav-links">
+            <a href="#">Home</a>
+            <a href="#">TV Shows</a>
+            <a href="#">Movies</a>
+            <a href="#">New & Popular</a>
+            <a href="#">My List</a>
+        </div>
+        <div class="user-menu">
+            <span>👤 John Doe</span>
+            <div class="avatar">JD</div>
+        </div>
+    </div>
+
+    <div class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">Discover Your Next Favorite Movie</h1>
+            <p class="hero-description">Powered by advanced AI algorithms, get personalized movie recommendations based on your unique taste and viewing history.</p>
+            <div class="hero-buttons">
+                <button class="btn-primary" onclick="getRecommendations()">Get Started</button>
+                <button class="btn-secondary">Learn More</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="search-section">
+            <h2 class="search-title">🎯 Enter Your User ID</h2>
+            <div class="input-group">
+                <input type="number" id="userId" placeholder="e.g., 1001, 1002, 1003..." value="1001">
+                <button onclick="getRecommendations()">Get Recommendations</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="netflix-loader"></div>
+            <p style="color: #999;">Finding the perfect movies for you...</p>
+        </div>
+
+        <div class="error-message" id="error"></div>
+
+        <div class="user-badge" id="userBadge" style="display: none;">
+            Personalized recommendations for User: <span id="displayUserId"></span>
+        </div>
+
+        <div class="movie-row" id="recommendationsRow" style="display: none;">
+            <h2 class="row-title">🎯 Recommended For You <span>View All →</span></h2>
+            <div class="movie-grid" id="movieGrid"></div>
+        </div>
+
+        <div class="movie-row">
+            <h2 class="row-title">🔥 Trending Now <span>View All →</span></h2>
+            <div class="movie-grid" id="trendingGrid"></div>
+        </div>
+
+        <div class="movie-row">
+            <h2 class="row-title">⭐ Top Rated <span>View All →</span></h2>
+            <div class="movie-grid" id="topRatedGrid"></div>
+        </div>
+
+        <div class="movie-row">
+            <h2 class="row-title">🎬 New Releases <span>View All →</span></h2>
+            <div class="movie-grid" id="newReleasesGrid"></div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 Netflix AI Recommendation Engine</p>
+            <p>
+                <a href="#">Terms of Use</a> | 
+                <a href="#">Privacy Policy</a> | 
+                <a href="#">FAQ</a> | 
+                <a href="#">Help Center</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Real movie database with actual images
+        const movieDatabase = [
+            {
+                id: 1,
+                title: "The Shawshank Redemption",
+                genre: "Drama",
+                year: 1994,
+                rating: 4.9,
+                image: "https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
+                backdrop: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?auto=format&fit=crop&w=500",
+                description: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency."
+            },
+            {
+                id: 2,
+                title: "The Godfather",
+                genre: "Crime",
+                year: 1972,
+                rating: 4.8,
+                image: "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+                backdrop: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=500",
+                description: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son."
+            },
+            {
+                id: 3,
+                title: "The Dark Knight",
+                genre: "Action",
+                year: 2008,
+                rating: 4.9,
+                image: "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+                backdrop: "https://images.unsplash.com/photo-1531259683007-016a7b628fc3?auto=format&fit=crop&w=500",
+                description: "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice."
+            },
+            {
+                id: 4,
+                title: "Pulp Fiction",
+                genre: "Crime",
+                year: 1994,
+                rating: 4.8,
+                image: "https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
+                backdrop: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=500",
+                description: "The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence and redemption."
+            },
+            {
+                id: 5,
+                title: "Inception",
+                genre: "Sci-Fi",
+                year: 2010,
+                rating: 4.7,
+                image: "https://image.tmdb.org/t/p/w500/9gk7adHYeDvHkCSEqAvQNLV5Uge.jpg",
+                backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=500",
+                description: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O."
+            },
+            {
+                id: 6,
+                title: "The Matrix",
+                genre: "Sci-Fi",
+                year: 1999,
+                rating: 4.7,
+                image: "https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
+                backdrop: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=500",
+                description: "A computer hacker learns from mysterious rebels about the true nature of his reality and his role in the war against its controllers."
+            },
+            {
+                id: 7,
+                title: "Fight Club",
+                genre: "Drama",
+                year: 1999,
+                rating: 4.8,
+                image: "https://image.tmdb.org/t/p/w500/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",
+                backdrop: "https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=500",
+                description: "An insomniac office worker and a devil-may-care soap maker form an underground fight club that evolves into much more."
+            },
+            {
+                id: 8,
+                title: "Goodfellas",
+                genre: "Crime",
+                year: 1990,
+                rating: 4.7,
+                image: "https://image.tmdb.org/t/p/w500/aKuFiU82s5ISJpGZp7YkIr3kCUd.jpg",
+                backdrop: "https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?auto=format&fit=crop&w=500",
+                description: "The story of Henry Hill and his life in the mob, covering his relationship with his wife Karen and his mob partners."
+            },
+            {
+                id: 9,
+                title: "Star Wars",
+                genre: "Sci-Fi",
+                year: 1977,
+                rating: 4.8,
+                image: "https://image.tmdb.org/t/p/w500/6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg",
+                backdrop: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=500",
+                description: "Luke Skywalker joins forces with a Jedi Knight, a cocky pilot, a Wookiee and two droids to save the galaxy from the Empire's world-destroying battle station."
+            },
+            {
+                id: 10,
+                title: "The Lord of the Rings",
+                genre: "Fantasy",
+                year: 2001,
+                rating: 4.9,
+                image: "https://image.tmdb.org/t/p/w500/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",
+                backdrop: "https://images.unsplash.com/photo-1545569341-9eb8b30979d9?auto=format&fit=crop&w=500",
+                description: "A meek Hobbit from the Shire and eight companions set out on a journey to destroy the powerful One Ring and save Middle-earth from the Dark Lord Sauron."
+            }
+        ];
+
+        // Load all movie sections on page load
+        window.onload = function() {
+            displayMovies('trendingGrid', movieDatabase.slice(0, 5));
+            displayMovies('topRatedGrid', movieDatabase.slice(2, 7));
+            displayMovies('newReleasesGrid', movieDatabase.slice(5, 10));
+        };
+
+        async function getRecommendations() {
+            const userId = document.getElementById('userId').value;
+            
+            if (!userId) {
+                showError('Please enter a User ID');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('recommendationsRow').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+
+            try {
+                // Simulate API call (replace with actual API)
+                setTimeout(() => {
+                    document.getElementById('loading').style.display = 'none';
+                    
+                    // Random selection of movies for demo
+                    const shuffled = [...movieDatabase].sort(() => 0.5 - Math.random());
+                    const recommendations = shuffled.slice(0, 8);
+                    
+                    displayRecommendations(recommendations, userId);
+                }, 2000);
+                
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                showError('Network error. Please try again.');
+            }
+        }
+
+        function displayRecommendations(movies, userId) {
+            document.getElementById('displayUserId').textContent = userId;
+            document.getElementById('userBadge').style.display = 'inline-block';
+            
+            const grid = document.getElementById('movieGrid');
+            grid.innerHTML = '';
+
+            movies.forEach((movie, index) => {
+                const fullStars = Math.floor(movie.rating);
+                const hasHalfStar = movie.rating % 1 >= 0.5;
+                
+                let stars = '';
+                for (let i = 0; i < 5; i++) {
+                    if (i < fullStars) {
+                        stars += '<span class="star">★</span>';
+                    } else if (i === fullStars && hasHalfStar) {
+                        stars += '<span class="star">½</span>';
+                    } else {
+                        stars += '<span class="star inactive">☆</span>';
+                    }
+                }
+
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.style.animation = `fadeInUp 0.5s ease ${index * 0.1}s both`;
+                card.innerHTML = `
+                    <div class="movie-poster">
+                        <img src="${movie.backdrop}" alt="${movie.title}" 
+                             onerror="this.src='https://via.placeholder.com/300x450?text=${movie.title.replace(/ /g, '+')}'">
+                        <div class="movie-rating-badge">⭐ ${movie.rating}</div>
+                        <div class="movie-overlay">
+                            <p style="font-size: 12px; color: #ccc;">${movie.description.substring(0, 100)}...</p>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="movie-genre">${movie.genre}</div>
+                        <div class="movie-meta">
+                            <span class="movie-year">${movie.year}</span>
+                            <div class="stars">${stars}</div>
+                        </div>
+                    </div>
+                `;
+                
+                card.onclick = () => showMovieDetails(movie);
+                grid.appendChild(card);
+            });
+
+            document.getElementById('recommendationsRow').style.display = 'block';
+            
+            // Scroll to recommendations
+            document.getElementById('recommendationsRow').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function displayMovies(gridId, movies) {
+            const grid = document.getElementById(gridId);
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+
+            movies.forEach((movie, index) => {
+                const stars = '★'.repeat(Math.floor(movie.rating)) + '☆'.repeat(5 - Math.floor(movie.rating));
+
+                const card = document.createElement('div');
+                card.className = 'movie-card';
+                card.innerHTML = `
+                    <div class="movie-poster">
+                        <img src="${movie.backdrop}" alt="${movie.title}">
+                        <div class="movie-rating-badge">⭐ ${movie.rating}</div>
+                    </div>
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="movie-genre">${movie.genre}</div>
+                        <div class="movie-meta">
+                            <span class="movie-year">${movie.year}</span>
+                            <div class="stars">${stars.split('').map(s => `<span class="star">${s}</span>`).join('')}</div>
+                        </div>
+                    </div>
+                `;
+                
+                card.onclick = () => showMovieDetails(movie);
+                grid.appendChild(card);
+            });
+        }
+
+        function showMovieDetails(movie) {
+            alert(`
+🎬 ${movie.title} (${movie.year})
+📌 Genre: ${movie.genre}
+⭐ Rating: ${movie.rating}/5.0
+📝 ${movie.description}
+            `);
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Enter key to submit
+        document.getElementById('userId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                getRecommendations();
+            }
+        });
+    </script>
+</body>
+</html>
